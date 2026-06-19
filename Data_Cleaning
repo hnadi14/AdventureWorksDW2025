@@ -1,0 +1,73 @@
+----------------------
+--    بررسی تعداد null ها
+SELECT
+    COUNT(*) AS TotalRows,
+    SUM(CASE WHEN ProductKey IS NULL THEN 1 ELSE 0 END) AS NullProductKey,
+    SUM(CASE WHEN CustomerKey IS NULL THEN 1 ELSE 0 END) AS NullCustomerKey,
+    SUM(CASE WHEN OrderDateKey IS NULL THEN 1 ELSE 0 END) AS NullOrderDateKey,
+    SUM(CASE WHEN SalesAmount IS NULL THEN 1 ELSE 0 END) AS NullSalesAmount,
+    SUM(CASE WHEN OrderQuantity IS NULL THEN 1 ELSE 0 END) AS NullOrderQuantity
+FROM FactInternetSales;
+----------------------------
+-- بررسی سفارش های تکراری
+SELECT SalesOrderNumber, SalesOrderLineNumber,
+    COUNT(*) AS DuplicateCount
+FROM FactInternetSales
+GROUP BY SalesOrderNumber, SalesOrderLineNumber
+HAVING COUNT(*) > 1;
+GO
+----------------------------------------------------------
+-- بررسی مشتریان تکراری
+SELECT FirstName, LastName, EmailAddress,
+       COUNT(*) AS DuplicateCount
+FROM DimCustomer
+GROUP BY FirstName, LastName, EmailAddress
+HAVING COUNT(*) > 1;
+----------------------------------------
+-- بررسی تاریخ سفارشات که باید معتبر باشند و در جدول تاریخ ها باشند
+SELECT *
+FROM FactInternetSales f
+    LEFT JOIN DimDate d
+        ON f.OrderDateKey = d.DateKey
+WHERE d.DateKey IS NULL;
+------------------------------------------
+-- بررسی تاریخ ارسال قبل از تاریخ سفارش
+SELECT *
+FROM FactInternetSales
+WHERE ShipDateKey < OrderDateKey;
+---------------------------------------------------
+--- فروش منفی
+-- تعداد منفی
+-- هزینه منفی
+-- سود منفی
+SELECT *
+FROM FactInternetSales
+WHERE SalesAmount < 0 OR OrderQuantity < 0 Or TotalProductCost < 0 
+        OR SalesAmount < TotalProductCost;
+------------------------------------------------
+-- مشتری نامعتبر
+SELECT *
+FROM FactInternetSales f
+    LEFT JOIN DimCustomer c
+        ON f.CustomerKey = c.CustomerKey
+WHERE c.CustomerKey IS NULL;
+--------------------
+-- کالای نامعتبر
+SELECT *
+FROM FactInternetSales f
+    LEFT JOIN DimProduct p
+        ON f.ProductKey = p.ProductKey
+WHERE p.ProductKey IS NULL;
+-----------------------------------------
+-- فروش های غیر عادی
+-- مبلغ فروش منهای میانگین فروش ها بزرگتر از 3 برابر انحراف معیار
+WITH Stats AS
+(
+SELECT AVG(SalesAmount) AS AvgSales, STDEV(SalesAmount) AS StdSales
+    FROM FactInternetSales
+)
+SELECT f.*
+FROM FactInternetSales f
+        CROSS JOIN Stats s
+WHERE ABS(f.SalesAmount - s.AvgSales) > (3 * s.StdSales);
+---------------------------------
