@@ -1,0 +1,92 @@
+---------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_CustomerSegmentation
+AS
+-- دسته بندی مشتریان بر اساس مقدار خرید
+WITH CustomerSales AS
+(
+    SELECT
+        c.CustomerKey, c.FirstName + ' ' + c.LastName AS CustomerName,
+        SUM(f.SalesAmount) AS TotalRevenue,
+        COUNT(DISTINCT f.SalesOrderNumber) AS TotalOrders
+    FROM FactInternetSales f
+        INNER JOIN DimCustomer c
+            ON f.CustomerKey = c.CustomerKey
+    GROUP BY c.CustomerKey, c.FirstName, c.LastName
+)
+-- برچسب بر اساس مقدار خرید
+SELECT *,
+    CASE
+        WHEN TotalRevenue >= 10000
+            THEN 'Platinum'
+        WHEN TotalRevenue >= 5000
+            THEN 'Gold'
+        WHEN TotalRevenue >= 2000
+            THEN 'Silver'
+        ELSE 'Bronze'
+    END AS CustomerSegment
+FROM CustomerSales;
+GO
+--------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_CustomerLifetimeValue
+AS
+-- Customer Lifetime Value
+-- محاسبه مقدار خرید هر مشتری
+-- محاسبه تعداد خرید های مشتری
+-- تاریخ اولین خرید مشتری
+-- تاریخ اخرین خرید هر مشتری
+-- 
+WITH CustomerMetrics AS
+(
+    SELECT c.CustomerKey, c.FirstName + ' ' + c.LastName AS CustomerName,
+        SUM(f.SalesAmount) AS TotalRevenue,
+        COUNT(DISTINCT f.SalesOrderNumber) AS TotalOrders,
+        MIN(d.FullDateAlternateKey) AS FirstPurchaseDate,
+        MAX(d.FullDateAlternateKey) AS LastPurchaseDate
+    FROM FactInternetSales f
+        INNER JOIN DimCustomer c
+            ON f.CustomerKey = c.CustomerKey
+        INNER JOIN DimDate d
+            ON f.OrderDateKey = d.DateKey
+    GROUP BY c.CustomerKey, c.FirstName, c.LastName
+)
+-- محاسبه میانگین خرید هر مشتری
+-- محاسبه تعداد روز مشتری از خرید اول تا خرید اخر
+SELECT *,
+        TotalRevenue / NULLIF(TotalOrders,0) AS AverageOrderValue,
+        DATEDIFF( DAY, FirstPurchaseDate, LastPurchaseDate ) AS CustomerLifetimeDays
+FROM CustomerMetrics;
+GO
+---------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_RFMScore
+AS
+-- RFM
+-- تاریخ اخرین خرید
+-- تعداد خرید
+-- مقدار خرید هر مشتری
+WITH CustomerRFM AS
+(
+    SELECT c.CustomerKey,
+        MAX(d.FullDateAlternateKey) AS LastPurchaseDate,
+        COUNT(DISTINCT f.SalesOrderNumber) AS Frequency,
+        SUM(f.SalesAmount) AS Monetary
+    FROM FactInternetSales f
+        INNER JOIN DimCustomer c
+            ON f.CustomerKey = c.CustomerKey
+        INNER JOIN DimDate d
+            ON f.OrderDateKey = d.DateKey
+    GROUP BY c.CustomerKey
+),
+-- دسته بندی مشتری ها در 5 بخش مجزا
+-- با توجه به اخرین خرید، تعداد خرید و مقدار خرید کل
+Scored AS
+(
+    SELECT *,
+        NTILE(5) OVER (ORDER BY DATEDIFF (DAY, LastPurchaseDate, GETDATE()) ASC ) AS R_Score,
+        NTILE(5) OVER (ORDER BY Frequency DESC ) AS F_Score,
+        NTILE(5) OVER (ORDER BY Monetary DESC ) AS M_Score
+    FROM CustomerRFM
+)
+SELECT *,
+    CONCAT (R_Score, F_Score, M_Score ) AS RFMScore
+FROM Scored;
+GO
