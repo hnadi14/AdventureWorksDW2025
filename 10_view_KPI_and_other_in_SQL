@@ -1,0 +1,199 @@
+USE AdventureWorksDW2025;
+GO
+CREATE OR ALTER VIEW dbo.vw_RevenueGrowthRate
+AS
+-------------------------------------------------------
+-- نرخ رشد سالانه فروش
+WITH SalesByYear AS
+(
+    -- جمع فروش هر سال
+    SELECT
+        d.CalendarYear, SUM(f.SalesAmount) AS TotalSales
+    FROM FactInternetSales f
+        INNER JOIN DimDate d
+            ON f.OrderDateKey = d.DateKey
+    GROUP BY d.CalendarYear
+)
+-- نرخ رشد نسبت به سال قبل
+SELECT
+    CalendarYear, TotalSales,
+    LAG(TotalSales) OVER(ORDER BY CalendarYear) AS PreviousYear,
+
+    ROUND(
+        (TotalSales - LAG(TotalSales) OVER(ORDER BY CalendarYear)) * 100.0
+          /NULLIF (LAG(TotalSales) OVER(ORDER BY CalendarYear),0)
+    ,2) AS GrowthPercent
+FROM SalesByYear;
+GO
+-----------------------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_MonthlyRevenueTrend
+AS
+-------------
+-- فروش ماهیانه و میانگین متحرک
+-- محاسبه فروش هر ماه
+WITH SalesAmount AS
+(
+    SELECT d.CalendarYear, d.MonthNumberOfYear,
+        SUM(f.SalesAmount) AS TotalSales
+    FROM FactInternetSales f
+    INNER JOIN DimDate d
+        ON f.OrderDateKey = d.DateKey
+    GROUP BY d.CalendarYear, d.MonthNumberOfYear
+)
+-- محاسبه فروش میانگین 3 ماهه
+SELECT *,
+    AVG(TotalSales) OVER (ORDER BY CalendarYear, MonthNumberOfYear ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+    ) AS MovingAverage_3_Month
+FROM SalesAmount;
+GO
+
+---------------------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_TopProductsRevenue
+AS
+
+-- 10 محصول پرفروش
+-- درصد فروش هر محصول
+--- یافتن 10 محصول پر فروش
+WITH ProductSales AS
+(
+    SELECT TOP (10) p.EnglishProductName, SUM(f.SalesAmount) AS TotalSales
+    FROM FactInternetSales f
+            INNER JOIN DimProduct p
+                ON f.ProductKey = p.ProductKey
+    GROUP BY p.EnglishProductName
+    ORDER BY TotalSales DESC
+),
+-- محاسبه فروش کل
+TotalAllSales AS
+(
+    SELECT SUM(SalesAmount) AS GrandTotal
+    FROM FactInternetSales
+)
+-- محاسبه درصد فروش هر محصول و درصد فروش تجمعی
+SELECT ps.EnglishProductName, ps.TotalSales,
+    (ps.TotalSales / tas.GrandTotal) * 100 AS SalesPercentage,
+    SUM(ps.TotalSales) OVER(ORDER BY ps.TotalSales DESC)
+    / tas.GrandTotal * 100 AS CumulativePercentage
+FROM ProductSales ps
+CROSS JOIN TotalAllSales tas;
+GO
+----------------------------------------
+CREATE OR ALTER VIEW dbo.vw_VIPCustomers
+AS
+-- مشتریان VIP
+-- 20 مشتری برتر
+SELECT TOP (20) WITH TIES
+    c.FirstName + ' ' + c.LastName AS CustomerName,
+    SUM(f.SalesAmount) AS TotalSales
+FROM FactInternetSales f
+    INNER JOIN DimCustomer c
+        ON f.CustomerKey = c.CustomerKey
+GROUP BY c.FirstName, c.LastName
+ORDER BY TotalSales DESC;
+GO
+----------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_RevenueByCountry
+AS
+-- مقدار فروش بر اساس کشور
+SELECT g.EnglishCountryRegionName, SUM(f.SalesAmount) AS TotalSales
+FROM FactInternetSales f
+    INNER JOIN DimCustomer c
+        ON f.CustomerKey = c.CustomerKey
+    INNER JOIN DimGeography g
+        ON c.GeographyKey = g.GeographyKey
+GROUP BY g.EnglishCountryRegionName;
+GO
+---------------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_PromotionEffectiveness
+AS
+-- اثر بخشی کمپین های تبلیغاتی
+SELECT p.EnglishPromotionName,
+        SUM(f.SalesAmount) AS TotalSales
+FROM FactInternetSales f
+    INNER JOIN DimPromotion p
+        ON f.PromotionKey = p.PromotionKey
+GROUP BY p.EnglishPromotionName;
+GO
+-----------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_ProductMarketShare
+AS
+-- سهم هر محصول از فروش کل
+-- محاسبه مقدار فروش هر محصول
+WITH ProductSales AS
+(
+    SELECT p.EnglishProductName, SUM(f.SalesAmount) AS ProductSales
+    FROM FactInternetSales f
+        INNER JOIN DimProduct p
+            ON f.ProductKey = p.ProductKey
+    GROUP BY p.EnglishProductName
+)
+-- محاسبه درصد فروش هر محصول
+SELECT
+    EnglishProductName, ProductSales,
+    ROUND (ProductSales * 100 / SUM(ProductSales) OVER(), 2 ) AS MarketSharePercent
+FROM ProductSales;
+GO
+----------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_Pareto80Products
+AS
+-- محصولاتی که 80 درصد فروش را داشته اند
+-- فروش هر محصول
+WITH ProductSales AS
+(
+    SELECT p.EnglishProductName, SUM(f.SalesAmount) AS SalesAmount
+    FROM dbo.FactInternetSales f
+        INNER JOIN dbo.DimProduct p
+            ON p.ProductKey = f.ProductKey
+    GROUP BY p.EnglishProductName
+),
+-- درصد فروش تجمعی
+Pareto AS
+(
+SELECT *,
+        SUM(SalesAmount) OVER ( ORDER BY SalesAmount DESC ROWS UNBOUNDED PRECEDING )
+        * 100.0 / SUM(SalesAmount) OVER() AS RunningPercent
+    FROM ProductSales
+)
+-- نمایش محصولات با شرط درصد فروش تجمعی 80 درصد و اخرین محصولی که از 80 درصد گذشته است
+SELECT *
+FROM
+(
+    SELECT *, LAG (RunningPercent, 1, 0) OVER(ORDER BY SalesAmount DESC) AS PrevPercent
+    FROM Pareto
+) x
+WHERE PrevPercent < 80;
+GO
+---------------------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_ProfitAnalysis
+AS
+-- سود فروش
+-- محاسبه جمع فروش  هر کالا
+-- محاسبه هزینه هر کالا
+-- محاسبه سود فروش
+SELECT
+    p.EnglishProductName,
+    SUM(f.SalesAmount) AS Revenue,
+    SUM(f.TotalProductCost) AS Cost,
+    SUM(f.SalesAmount) - SUM(f.TotalProductCost) AS Profit
+FROM FactInternetSales f
+    INNER JOIN DimProduct p
+        ON f.ProductKey = p.ProductKey
+GROUP BY p.EnglishProductName;
+GO
+-----------------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_ExecutiveKPIs
+AS
+-- محاسبه فروش کل
+-- محاسبه هزینه کل
+-- محاسبه تعداد سفارش ها
+-- محاسبه میانگین فروش در هر سفارش
+-- محاسبه میانگین سود
+SELECT
+    SUM(SalesAmount) AS Revenue,
+    SUM(TotalProductCost) AS Cost,
+    SUM(SalesAmount) - SUM(TotalProductCost) AS Profit,
+    (SUM(SalesAmount) - SUM(TotalProductCost)) / COUNT(DISTINCT SalesOrderNumber) AverageProfit,
+    COUNT(DISTINCT SalesOrderNumber) AS Orders,
+    SUM(SalesAmount) / COUNT(DISTINCT SalesOrderNumber) AS AverageOrderValue
+FROM FactInternetSales;
+GO
