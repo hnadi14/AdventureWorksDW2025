@@ -1,0 +1,49 @@
+CREATE OR ALTER VIEW dbo.vw_MostProfitableProducts
+AS
+-- کالاهای سود آور
+-- محاسبه کل فروش
+-- کل هزینه
+-- سود 
+-- حاشیه سود
+-- به ازای هر کالا
+SELECT p.ProductKey, p.EnglishProductName,
+    SUM(f.SalesAmount) AS Revenue,
+    SUM(f.TotalProductCost) AS Cost,
+    SUM(f.SalesAmount) - SUM(f.TotalProductCost) AS Profit,
+    ROUND ((SUM(f.SalesAmount) - SUM(f.TotalProductCost)) * 100.0 / NULLIF ( SUM(f.SalesAmount), 0),2)
+        AS ProfitMarginPercent
+FROM FactInternetSales f
+    INNER JOIN DimProduct p
+        ON f.ProductKey = p.ProductKey
+GROUP BY p.ProductKey, p.EnglishProductName;
+GO
+
+-----------------------------------------------------
+CREATE OR ALTER VIEW dbo.vw_CategoryPerformance
+AS
+
+-- تحلیل دسته بندی محصولات در فروش و سود و ...
+-- محاسبه فروش، هزینه، سود، تعداد سفارش ها و تعداد کالا های فروخته شده در هر دسته
+WITH P AS (
+SELECT pc.EnglishProductCategoryName AS CategoryName,
+       SUM(f.SalesAmount)AS Revenue,
+       SUM(f.TotalProductCost) AS Cost,
+       SUM(f.SalesAmount) - SUM(f.TotalProductCost) AS Profit,
+       COUNT(DISTINCT f.SalesOrderNumber) AS Orders,
+       SUM(f.OrderQuantity) AS QuantitySold
+FROM FactInternetSales f
+    INNER JOIN DimProduct p
+        ON f.ProductKey = p.ProductKey
+    INNER JOIN DimProductSubcategory ps
+        ON p.ProductSubcategoryKey = ps.ProductSubcategoryKey
+    INNER JOIN DimProductCategory pc
+        ON ps.ProductCategoryKey = pc.ProductCategoryKey
+
+GROUP BY pc.EnglishProductCategoryName
+)
+SELECT *,
+    DENSE_RANK() OVER ( ORDER BY Profit DESC) AS ProfitRank,
+    ROUND ( Revenue * 100.0 / SUM(Revenue) OVER(), 2) AS RevenueSharePercent
+FROM P
+GO
+--------------------------------------
