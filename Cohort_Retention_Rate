@@ -1,0 +1,63 @@
+
+CREATE OR ALTER VIEW dbo.vw_CohortRetentionRate
+AS
+-- محاسبه تاریخ اولین خرید هر مشتری
+-- محاسبه فاصله زمانی بر اساس ماه از خرید اول
+-- CohortIndex
+WITH CohortData AS
+(
+    SELECT
+        DATEFROMPARTS (YEAR(fp.FirstPurchaseDate), MONTH(fp.FirstPurchaseDate), 1) AS CohortDate,
+        DATEDIFF
+        (
+            MONTH,
+            DATEFROMPARTS (YEAR(fp.FirstPurchaseDate), MONTH(fp.FirstPurchaseDate), 1 ),
+            DATEFROMPARTS (YEAR(d.FullDateAlternateKey), MONTH(d.FullDateAlternateKey), 1 )
+        ) AS CohortIndex,
+        f.CustomerKey
+
+    FROM FactInternetSales f
+        INNER JOIN DimDate d
+            ON f.OrderDateKey = d.DateKey
+        INNER JOIN
+        (
+        -- محاسبه اولین خرید هر مشتری
+            SELECT CustomerKey,
+                   MIN(d.FullDateAlternateKey) AS FirstPurchaseDate
+
+            FROM FactInternetSales f
+                INNER JOIN DimDate d
+                    ON f.OrderDateKey = d.DateKey
+            GROUP BY CustomerKey
+        ) fp 
+        ON f.CustomerKey = fp.CustomerKey
+),
+-- تعداد مشتریان جدید در هر ماه
+CohortSize AS
+(
+    SELECT CohortDate,
+           COUNT(DISTINCT CustomerKey) AS CohortCustomers
+    FROM CohortData
+    WHERE CohortIndex = 0
+    GROUP BY CohortDate
+)
+-- محاسبه تعداد مشتریان که در ماه  خرید داشته اند
+-- محاسبه نرخ نگهداری مشتریان
+SELECT cd.CohortDate, cd.CohortIndex,
+    COUNT(DISTINCT cd.CustomerKey) AS ActiveCustomers,
+    cs.CohortCustomers,
+    ROUND (COUNT(DISTINCT cd.CustomerKey) * 100.0 / cs.CohortCustomers, 2 ) AS RetentionRate
+FROM CohortData cd
+    INNER JOIN CohortSize cs
+        ON cd.CohortDate = cs.CohortDate
+GROUP BY cd.CohortDate, cd.CohortIndex, cs.CohortCustomers;
+GO
+
+--- افزودن ایندکس
+-- جهت بهبود سرعت و عدم ایجاد operator key lookup در پلن اجرایی execution plan
+-- 
+CREATE NONCLUSTERED INDEX IX_FactInternetSales_OrderDateKey 
+    ON FactInternetSales(OrderDateKey) INCLUDE (CustomerKey);
+
+CREATE NONCLUSTERED INDEX IX_DimDate_DateKey 
+    ON DimDate(DateKey) INCLUDE (FullDateAlternateKey);
