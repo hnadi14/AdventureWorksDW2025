@@ -31,19 +31,10 @@
 
 گام 4: 
 ایجاد داشبورد مدیریت در power bi
-حاشیه سود:
-Profit Margin Display = 
-VAR Margin = DIVIDE([Profit], [Revenue], 0)
-VAR Icon = 
-    SWITCH(
-        TRUE(),
-        Margin < 0.05, "❤️",
-         Margin >= 0.05 && Margin < 0.10, "🧡",
-        Margin >= 0.10 && Margin < 0.20, "💛",
-        Margin >= 0.20, "💚"
-    )
-RETURN
-    FORMAT(Margin, "0.00%") & " " & Icon 
+حاشیه سود، مقدار فروش،  فروش بر اساس کالاها و کشورها، میزان سود و فروش ماهیانه و سالاینه
+انواع فیلترهای شامل: سال، کشور، نام کالا و کمپین های تبلیغاتی
+نمودارهای: line, bar, map, area
+فایل: managerBI
     
 
 <p align="center">
