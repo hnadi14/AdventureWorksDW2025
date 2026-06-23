@@ -16,11 +16,43 @@
 
 گام 3: خوشه بندی مشتریان با روش KMeans در پایتون
 
+
+<p align="center">
+<img width="600" height="350" alt="cluster" src="https://github.com/user-attachments/assets/b15d7aa4-94b7-4812-bab8-f411f27497b5" />
+</p>
+
+
 پیش بین سود ماه آینده با سه مدل خطی، درخت تصمیم و xgboost
 داده ورودی: میزان فروش ماهیانه، میزان فروش 3 ماه قبل، میانگین متحرک سه ماهه، انحراف معیار سه ماهه
 <p align="center">
 <img width="700" height="300" alt="pred_month" src="https://github.com/user-attachments/assets/21a12d00-9830-4acf-a32e-ac43037eb146" />
 </p>
+
+
+گام 4: 
+ایجاد داشبورد مدیریت در power bi
+حاشیه سود:
+Profit Margin Display = 
+VAR Margin = DIVIDE([Profit], [Revenue], 0)
+VAR Icon = 
+    SWITCH(
+        TRUE(),
+        Margin < 0.05, "❤️",
+         Margin >= 0.05 && Margin < 0.10, "🧡",
+        Margin >= 0.10 && Margin < 0.20, "💛",
+        Margin >= 0.20, "💚"
+    )
+RETURN
+    FORMAT(Margin, "0.00%") & " " & Icon 
+    
+
+<p align="center">
+<img width="1363" height="674" alt="pbi_manager" src="https://github.com/user-attachments/assets/3c0b88b7-3bd4-4514-96b1-c059fa75ab9e" />
+</p>
+
+
+
+
 
 
 
