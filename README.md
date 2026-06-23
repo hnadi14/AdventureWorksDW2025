@@ -18,6 +18,12 @@
 
 پیش بین سود ماه آینده با سه مدل خطی، درخت تصمیم و xgboost
 داده ورودی: میزان فروش ماهیانه، میزان فروش 3 ماه قبل، میانگین متحرک سه ماهه، انحراف معیار سه ماهه
+<p align="center">
+<img width="700" height="300" alt="pred_month" src="https://github.com/user-attachments/assets/21a12d00-9830-4acf-a32e-ac43037eb146" />
+</p>
+
+
+
 
 
 
