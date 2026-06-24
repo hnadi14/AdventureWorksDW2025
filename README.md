@@ -15,7 +15,7 @@
 ایجاد ایندکس بابت سرعت و عدم key look up
 
 گام 3: خوشه بندی مشتریان با روش KMeans در پایتون
-
+فایل kmeans.py
 
 <p align="center">
 <img width="600" height="350" alt="cluster" src="https://github.com/user-attachments/assets/b15d7aa4-94b7-4812-bab8-f411f27497b5" />
@@ -24,6 +24,7 @@
 
 پیش بین سود ماه آینده با سه مدل خطی، درخت تصمیم و xgboost
 داده ورودی: میزان فروش ماهیانه، میزان فروش 3 ماه قبل، میانگین متحرک سه ماهه، انحراف معیار سه ماهه
+فایل predict.py
 <p align="center">
 <img width="700" height="300" alt="pred_month" src="https://github.com/user-attachments/assets/21a12d00-9830-4acf-a32e-ac43037eb146" />
 </p>
