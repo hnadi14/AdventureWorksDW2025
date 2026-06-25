@@ -39,7 +39,7 @@
     
 
 <p align="center">
-<img width="1363" height="674" alt="pbi_manager" src="[/assets/3c0b88b7-3bd4-4514-96b1-c059fa75ab9e](https://github.com/user-attachments/assets/bee259c0-220c-4363-83bb-8cb474daecd6)" />
+<img width="1363" height="674" alt="pbi_manager" src="https://github.com/user-attachments/assets/bee259c0-220c-4363-83bb-8cb474daecd6" />
 </p>
 
 
