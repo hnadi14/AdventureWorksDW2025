@@ -34,4 +34,54 @@ VAR Icon =
     )
 RETURN
     FORMAT(CustomerInMillions, "0.0") & "K " & Icon
-	
+-------------------------------------- KPI	----------------------------------
+ایجاد KPI رشد فروش
+
+مقدار فروش
+-----
+Revenue = 
+SUM(
+    vw_FactSalesAnalytics[SalesAmount]
+)
+---------------------
+فروش تا سال گذشته
+-----
+Revenue LY = 
+CALCULATE(
+    [Revenue],
+    SAMEPERIODLASTYEAR(
+        vw_DimDateAnalytics[FullDateAlternateKey]
+    )
+)
+--------------------------------
+میزان رشد فروش
+-----
+Revenue Growth % = 
+DIVIDE(
+    [Revenue] - [Revenue LY],
+    [Revenue LY]
+)
+-----------------------------
+ایکون وضعیت رشد فروش
+-----
+Growth Arrow = 
+SWITCH(
+    TRUE(),
+    [Revenue Growth %] > 0,"↑",
+    [Revenue Growth %] < 0,"↓",
+    "→"
+)
+---------------------
+نمایش KPI
+-----
+Revenue KPI = 
+FORMAT([Revenue]/1000,"0K")
+&
+" "
+&
+[Growth Arrow]
+&
+" "
+&
+FORMAT([Revenue Growth %],"0%")
+---------------
