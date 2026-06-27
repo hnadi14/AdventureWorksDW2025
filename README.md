@@ -43,6 +43,20 @@
 <img width="1363" height="674" alt="pbi_manager" src="https://github.com/user-attachments/assets/bee259c0-220c-4363-83bb-8cb474daecd6" />
 </p>
 
+گام 5: 
+پاسخ به پرسش های زیر:
+کدام محصول سودآور است؟
+ کدام محصول فقط فروش دارد؟
+ کدام محصول باید تبلیغ شود؟
+ کدام محصول باید حذف شود؟
+ کدام محصولات 80٪ درآمد را تولید می‌کنند؟
+ سهم هر محصول از بازار داخلی شرکت چقدر است؟
+<img width="1257" height="705" alt="product_analytics" src="https://github.com/user-attachments/assets/b0da4a97-4d5d-4090-8e0a-dc0721770354" />
+و یک toolTip جهت مشخصات کامل هر کالا 
+<img width="328" height="305" alt="product_analytics_tooltip" src="https://github.com/user-attachments/assets/cd74cc34-c869-40df-b88e-7bea96e87c99" />
+
+
+
 
 
 
