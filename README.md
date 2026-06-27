@@ -17,6 +17,7 @@
 گام 3: خوشه بندی مشتریان با روش KMeans در پایتون
 فایل kmeans.py
 
+
 <p align="center">
 <img width="600" height="350" alt="cluster" src="https://github.com/user-attachments/assets/b15d7aa4-94b7-4812-bab8-f411f27497b5" />
 </p>
@@ -37,7 +38,11 @@
 نمودارهای: line, bar, map, area
 ایجاد KPI رشد فروش 
 فایل: managerBI
-    
+پاسخ به پرسش های زی:
+وضعیت فروش چطور است؟
+وضعیت سود چطور است؟
+رشد داریم یا افت؟
+بهترین و بدترین عملکرد مربوط به کدام بخش است؟
 
 <p align="center">
 <img width="1363" height="674" alt="pbi_manager" src="https://github.com/user-attachments/assets/bee259c0-220c-4363-83bb-8cb474daecd6" />
